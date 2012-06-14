@@ -52,8 +52,7 @@ class index(resource.Resource):
 
     '<table>',
       '<tbody>',
-        #''.join('<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(chi, *row) for chi, row in table.iteritems()),
-        ''.join('<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>'.format(chi, *row) for chi, row in table.iteritems()),
+        ''.join('<tr id="{0}"><td>{0}</td><td>'.format(chi) + '</td><td>'.join(map(str, row)) + '</td></tr>' for chi, row in table.iteritems()),
       '</tbody>',
     '</table>'))
 

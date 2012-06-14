@@ -6,6 +6,14 @@ jQuery(function ($)
       {
         var row = JSON.parse(evt.data);
 
-        $('<tr><td>' + row.join('</td><td>') + '</td></tr>').appendTo('tbody');
+        var $tr = $('#' + row[0].replace(/\./g, '\\.'));
+        if ($tr.length)
+        {
+          $tr.replaceWith('<tr id="' + row[0] + '"><td>' + row.join('</td><td>') + '</td></tr>');
+        }
+        else
+        {
+          $('<tr id="' + row[0] + '"><td>' + row.join('</td><td>') + '</td></tr>').appendTo('tbody');
+        }
       }
   });
