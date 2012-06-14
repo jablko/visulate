@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+
+import json, pickle, socket, websockets
+from functools import partial
+from twisted.internet import protocol, reactor, tcp
+from twisted.web import resource, server, static
+
+table = {}
+
+# Connected WebSocket clients
+transport = set()
+
+# Log collation server
+class factory(protocol.Factory):
+  class protocol:
+    def connectionLost(ctx, reason):
+      pass
+
+    def dataReceived(ctx, data):
+
+      # Ignore collation_secret
+
+      @partial(setattr, ctx, 'dataReceived')
+      def dataReceived(data):
+        chi = socket.inet_ntop(socket.AF_INET, data[224:228])
+        psql = pickle.decode_long(data[244:248])
+
+        try:
+          row = table[chi]
+
+        except KeyError:
+
+          # TypeError: 'tuple' object does not support item assignment
+          row = table[chi] = [1, psql]
+
+        else:
+          row[0] += 1
+          row[1] += psql
+
+        for itm in transport:
+          itm.write(json.dumps([chi] + row))
+
+    def makeConnection(ctx, transport):
+      pass
+
+tcp.Port(8085, factory()).startListening()
+
+class index(resource.Resource):
+  render = lambda ctx, request: ''.join((
+    '<script src="jquery-latest.min.js"></script>',
+    '<script src="script.js"></script>',
+
+    '<table>',
+      '<tbody>',
+        #''.join('<tr><td>{}</td><td>{}</td><td>{}</td></tr>'.format(chi, *row) for chi, row in table.iteritems()),
+        ''.join('<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>'.format(chi, *row) for chi, row in table.iteritems()),
+      '</tbody>',
+    '</table>'))
+
+# Add to and remove from connected WebSocket clients
+class factory(protocol.Factory):
+  class protocol:
+    def connectionLost(ctx, reason):
+      transport.remove(ctx.transport)
+
+    def makeConnection(ctx, nstTransport):
+      ctx.transport = nstTransport
+
+      transport.add(ctx.transport)
+
+resource = static.File('.')
+
+resource.putChild('', index())
+resource.putChild('skt', websockets.WebSocketsResource(factory()))
+
+tcp.Port(6011, server.Site(resource)).startListening()
+
+reactor.run()
