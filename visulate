@@ -22,23 +22,35 @@ class factory(protocol.Factory):
 
       @partial(setattr, ctx, 'dataReceived')
       def dataReceived(data):
-        chi = socket.inet_ntop(socket.AF_INET, data[224:228])
-        psql = pickle.decode_long(data[244:248])
+        delta = {}
 
-        try:
-          row = table[chi]
+        entryCount = pickle.decode_long(data[20:24])
 
-        except KeyError:
+        offset = 188
+        for _ in range(entryCount):
+          entryLen = pickle.decode_long(data[offset + 12:offset + 16])
 
-          # TypeError: 'tuple' object does not support item assignment
-          row = table[chi] = [1, psql]
+          chi = socket.inet_ntop(socket.AF_INET, data[offset + 36:offset + 40])
+          psql = pickle.decode_long(data[offset + 56:offset + 60])
 
-        else:
-          row[0] += 1
-          row[1] += psql
+          try:
+            row = table[chi]
+
+          except KeyError:
+
+            # TypeError: 'tuple' object does not support item assignment
+            row = table[chi] = [1, psql]
+
+          else:
+            row[0] += 1
+            row[1] += psql
+
+          delta[chi] = [chi] + row
+
+          offset += entryLen
 
         for itm in transport:
-          itm.write(json.dumps([chi] + row))
+          itm.write(json.dumps(delta.values()))
 
     def makeConnection(ctx, transport):
       pass

@@ -4,16 +4,18 @@ jQuery(function ($)
   {
     skt.onmessage = function (evt)
       {
-        var row = JSON.parse(evt.data);
-
-        var $tr = $('#' + row[0].replace(/\./g, '\\.'));
-        if ($tr.length)
-        {
-          $tr.replaceWith('<tr id="' + row[0] + '"><td>' + row.join('</td><td>') + '</td></tr>');
-        }
-        else
-        {
-          $('<tr id="' + row[0] + '"><td>' + row.join('</td><td>') + '</td></tr>').appendTo('tbody');
-        }
+        var delta = JSON.parse(evt.data);
+        jQuery.each(delta, function ()
+          {
+            var $tr = $('#' + this[0].replace(/\./g, '\\.'));
+            if ($tr.length)
+            {
+              $tr.replaceWith('<tr id="' + this[0] + '"><td>' + this.join('</td><td>') + '</td></tr>');
+            }
+            else
+            {
+              $('<tr id="' + this[0] + '"><td>' + this.join('</td><td>') + '</td></tr>').appendTo('tbody');
+            }
+          });
       }
   });
