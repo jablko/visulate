@@ -22,6 +22,11 @@ class factory(protocol.Factory):
 
       @partial(setattr, ctx, 'dataReceived')
       def dataReceived(data):
+
+        # Read IP address of the client's host machine and proxy response
+        # transfer length for each entry in segment, update table and build
+        # delta of changed rows
+
         delta = {}
 
         entryCount = pickle.decode_long(data[20:24])
@@ -79,7 +84,7 @@ class factory(protocol.Factory):
 
       transport.add(ctx.transport)
 
-resource = static.File('.')
+resource = static.File(__file__ + '/..')
 
 resource.putChild('', index())
 resource.putChild('skt', websockets.WebSocketsResource(factory()))
