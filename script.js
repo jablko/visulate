@@ -1,4 +1,4 @@
-var skt = new WebSocket('ws://localhost:6011/skt');
+var skt = new WebSocket('ws://' + location.host + '/skt');
 
 jQuery(function ($)
   {
