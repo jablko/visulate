@@ -64,7 +64,7 @@ tcp.Port(8085, factory()).startListening()
 
 class index(resource.Resource):
   render = lambda ctx, request: ''.join((
-    '<script src="jquery-latest.min.js"></script>',
+    '<script src="d3.v2.min.js"></script>',
     '<script src="script.js"></script>',
 
     '<table>',
