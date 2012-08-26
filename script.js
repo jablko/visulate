@@ -1,5 +1,7 @@
 var status = d3.select('body').append('div');
 
+var backoff = 1;
+
 (function connect()
   {
     status.text('Connecting...');
@@ -17,7 +19,16 @@ var status = d3.select('body').append('div');
         // different interval from which to select a delay length based on
         // implementation experience and particular application
 
-        setTimeout(connect, Math.random() * 5000);
+        setTimeout(connect, Math.random() * 5000 * backoff);
+
+        // Should the first reconnect attempt fail, subsequent reconnect
+        // attempts SHOULD be delayed by increasingly longer amounts of time,
+        // using a method such as truncated binary exponential backoff
+
+        if (backoff < 1 << 5)
+        {
+          backoff <<= 1;
+        }
       }
 
     skt.onmessage = function (evt)
@@ -42,5 +53,7 @@ var status = d3.select('body').append('div');
     skt.onopen = function ()
       {
         status.text('Connected.');
+
+        backoff = 1;
       }
   })();
