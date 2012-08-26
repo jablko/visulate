@@ -1,9 +1,15 @@
+var status = d3.select('body').append('div');
+
 (function connect()
   {
+    status.text('Connecting...');
+
     var skt = new WebSocket('ws://' + location.host + '/skt');
 
     skt.onclose = function ()
       {
+        status.text('Disconnected');
+
         // The first reconnect attempt SHOULD be delayed by a random amount of
         // time.  The parameters by which this random delay is chosen are left
         // to the client to decide; a value chosen randomly between 0 and 5
@@ -31,5 +37,10 @@
 
             td.text(function (d) { return d; });
           });
+      }
+
+    skt.onopen = function ()
+      {
+        status.text('Connected.');
       }
   })();

@@ -64,14 +64,14 @@ tcp.Port(8085, factory()).startListening()
 
 class index(resource.Resource):
   render = lambda ctx, request: ''.join((
-    '<script src="d3.v2.min.js"></script>',
-    '<script src="script.js"></script>',
-
     '<table>',
       '<tbody>',
         ''.join('<tr id="{0}"><td>{0}</td><td>'.format(chi) + '</td><td>'.join(map(str, row)) + '</td></tr>' for chi, row in table.iteritems()),
       '</tbody>',
-    '</table>'))
+    '</table>',
+
+    '<script src="d3.v2.min.js"></script>',
+    '<script src="script.js"></script>'))
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):
