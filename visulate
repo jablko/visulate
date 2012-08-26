@@ -27,7 +27,7 @@ class factory(protocol.Factory):
         # transfer length for each entry in segment, update table and build
         # delta of changed rows
 
-        delta = {}
+        delta = []
 
         entryCount = pickle.decode_long(data[20:24])
 
@@ -44,34 +44,26 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            row = table[chi] = [1, psql]
+            row = table[chi] = [chi, 1, psql]
 
           else:
-            row[0] += 1
-            row[1] += psql
+            row[1] += 1
+            row[2] += psql
 
-          delta[chi] = [chi] + row
+          delta.append(row)
 
           offset += entryLen
 
         for itm in transport:
-          itm.write(json.dumps(delta.values()))
+          itm.write(json.dumps(delta))
 
     def makeConnection(ctx, transport):
       pass
 
 tcp.Port(8085, factory()).startListening()
 
-class index(resource.Resource):
-  render = lambda ctx, request: ''.join((
-    '<table>',
-      '<tbody>',
-        ''.join('<tr id="{0}"><td>{0}</td><td>'.format(chi) + '</td><td>'.join(map(str, row)) + '</td></tr>' for chi, row in table.iteritems()),
-      '</tbody>',
-    '</table>',
-
-    '<script src="d3.v2.min.js"></script>',
-    '<script src="script.js"></script>'))
+class open(resource.Resource):
+  render = lambda ctx, request: json.dumps(table.values())
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):
@@ -86,7 +78,7 @@ class factory(protocol.Factory):
 
 resource = static.File(__file__ + '/..')
 
-resource.putChild('', index())
+resource.putChild('open', open())
 resource.putChild('skt', websockets.WebSocketsResource(factory()))
 
 tcp.Port(6011, server.Site(resource)).startListening()

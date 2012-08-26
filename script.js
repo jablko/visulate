@@ -2,6 +2,8 @@ var status = d3.select('body').append('div');
 
 var backoff = 1;
 
+var tbody = d3.select('body').append('table').append('tbody');
+
 (function connect()
   {
     status.text('Connecting...');
@@ -55,5 +57,17 @@ var backoff = 1;
         status.text('Connected.');
 
         backoff = 1;
+
+        d3.json('/open', function (result)
+          {
+            var tr = tbody.selectAll('tr').data(result);
+            tr.enter().append('tr');
+            tr.attr('id', function (d) { return d[0]; });
+            tr.exit().remove();
+
+            var td = tr.selectAll('td').data(function (d) { return d; });
+            td.enter().append('td');
+            td.text(function (d) { return d; });
+          });
       }
   })();
