@@ -10,11 +10,16 @@ table = {}
 # Connected WebSocket clients
 transport = set()
 
+# Connected log collation clients
+clients = 0
+
 # Log collation server
 class factory(protocol.Factory):
   class protocol:
     def connectionLost(ctx, reason):
-      pass
+      global clients
+
+      clients -= 1
 
     def dataReceived(ctx, data):
 
@@ -58,12 +63,14 @@ class factory(protocol.Factory):
           itm.write(json.dumps(delta))
 
     def makeConnection(ctx, transport):
-      pass
+      global clients
+
+      clients += 1
 
 tcp.Port(8085, factory()).startListening()
 
 class open(resource.Resource):
-  render = lambda ctx, request: json.dumps(table.values())
+  render = lambda ctx, request: json.dumps((table.values(), clients))
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):

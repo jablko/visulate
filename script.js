@@ -1,8 +1,10 @@
-var status = d3.select('body').append('div').attr('id', 'status');
+var socket = d3.select('body').append('div').attr('id', 'socket');
 
 var backoff = 1;
 
 var svg = d3.select('body').append('svg');
+
+var clients = d3.select('body').append('div').attr('id', 'clients');
 
 function humanize(value)
 {
@@ -32,7 +34,7 @@ function humanize(value)
 
 (function connect()
   {
-    status.text('Connecting...');
+    socket.text('Connecting...');
 
     var length;
 
@@ -40,7 +42,7 @@ function humanize(value)
 
     skt.onclose = function ()
       {
-        status.classed('disconnected', true).text('Disconnected');
+        socket.classed('disconnected', true).text('Disconnected');
 
         // The first reconnect attempt SHOULD be delayed by a random amount of
         // time.  The parameters by which this random delay is chosen are left
@@ -119,13 +121,13 @@ function humanize(value)
 
     skt.onopen = function ()
       {
-        status.classed('disconnected', false).text('Connected.');
+        socket.classed('disconnected', false).text('Connected.');
 
         backoff = 1;
 
         d3.json('/open', function (result)
           {
-            var g = svg.selectAll('g').data(result);
+            var g = svg.selectAll('g').data(result[0]);
 
             g.enter().append('g').call(function ()
               {
@@ -155,7 +157,7 @@ function humanize(value)
             chi.attr('x', xChi);
 
             var xPsql = d3.scale.linear()
-              .domain([0, d3.max(result.map(function (d) { return d[2]; }))])
+              .domain([0, d3.max(result[0].map(function (d) { return d[2]; }))])
               .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
 
             svg.selectAll('rect')
@@ -170,7 +172,18 @@ function humanize(value)
               .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
               .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
-            length = result.length;
+            length = result[0].length;
+
+            clients.classed('disconnected', result[1] < 1);
+
+            if (result[1] == 1)
+            {
+              clients.text('1 connected log collation client');
+            }
+            else
+            {
+              clients.text(d3.format(',')(result[1]) + ' connected log collation clients');
+            }
           });
       }
   })();
