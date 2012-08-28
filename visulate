@@ -20,6 +20,8 @@ class factory(protocol.Factory):
       global clients
 
       clients -= 1
+      for itm in transport:
+        itm.write(json.dumps(clients))
 
     def dataReceived(ctx, data):
 
@@ -62,10 +64,12 @@ class factory(protocol.Factory):
         for itm in transport:
           itm.write(json.dumps(delta))
 
-    def makeConnection(ctx, transport):
+    def makeConnection(ctx, nstTransport):
       global clients
 
       clients += 1
+      for itm in transport:
+        itm.write(json.dumps(clients))
 
 tcp.Port(8085, factory()).startListening()
 

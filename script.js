@@ -66,59 +66,75 @@ function humanize(value)
     skt.onmessage = function (evt)
       {
         var result = JSON.parse(evt.data);
-        result.forEach(function (d)
+        if (result instanceof Array)
+        {
+          result.forEach(function (d)
+            {
+              // http://www.w3.org/TR/CSS21/syndata#value-def-identifier
+              var g = d3.select('#\\00003' + d[0].replace(/\./g, '\\.'));
+              if (g.empty())
+              {
+                g = svg.append('g').attr('id', d[0]);
+
+                g.append('text')
+                  .attr('class', 'chi')
+                  .attr('y', 20 * length + 14) // vertical-align: middle;
+                  .text(d[0]);
+
+                g.append('rect').datum(d)
+                  .attr('height', 20)
+                  .attr('y', 20 * length);
+
+                g.append('text').datum(d)
+                  .attr('class', 'psql')
+                  .attr('y', 20 * length + 14) // vertical-align: middle;
+                  .text(humanize(d[2]));
+
+                length += 1;
+              }
+              else
+              {
+                g.select('rect').datum(d);
+
+                g.select('.psql').datum(d)
+                  .text(humanize(d[2]));
+              }
+            });
+
+          var chi = svg.selectAll('.chi');
+
+          var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
+
+          chi.attr('x', xChi);
+
+          var xPsql = d3.scale.linear()
+            .domain([0, d3.max(svg.selectAll('rect').data().map(function (d) { return d[2]; }))])
+            .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
+
+          svg.selectAll('rect')
+            .attr('width', function (d) { return xPsql(d[2]); })
+            .attr('x', xChi + 4);
+
+          svg.selectAll('.psql')
+            .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
+            .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
+            .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
+
+          svg.attr('height', 20 * length);
+        }
+        else
+        {
+          clients.classed('disconnected', result < 1);
+
+          if (result == 1)
           {
-            // http://www.w3.org/TR/CSS21/syndata#value-def-identifier
-            var g = d3.select('#\\00003' + d[0].replace(/\./g, '\\.'));
-            if (g.empty())
-            {
-              g = svg.append('g').attr('id', d[0]);
-
-              g.append('text')
-                .attr('class', 'chi')
-                .attr('y', 20 * length + 14) // vertical-align: middle;
-                .text(d[0]);
-
-              g.append('rect').datum(d)
-                .attr('height', 20)
-                .attr('y', 20 * length);
-
-              g.append('text').datum(d)
-                .attr('class', 'psql')
-                .attr('y', 20 * length + 14) // vertical-align: middle;
-                .text(humanize(d[2]));
-
-              length += 1;
-            }
-            else
-            {
-              g.select('rect').datum(d);
-
-              g.select('.psql').datum(d)
-                .text(humanize(d[2]));
-            }
-          });
-
-        var chi = svg.selectAll('.chi');
-
-        var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
-
-        chi.attr('x', xChi);
-
-        var xPsql = d3.scale.linear()
-          .domain([0, d3.max(svg.selectAll('rect').data().map(function (d) { return d[2]; }))])
-          .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
-
-        svg.selectAll('rect')
-          .attr('width', function (d) { return xPsql(d[2]); })
-          .attr('x', xChi + 4);
-
-        svg.selectAll('.psql')
-          .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
-          .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
-          .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
-
-        svg.attr('height', 20 * length);
+            clients.text('1 connected log collation client');
+          }
+          else
+          {
+            clients.text(d3.format(',')(result) + ' connected log collation clients');
+          }
+        }
       }
 
     skt.onopen = function ()
