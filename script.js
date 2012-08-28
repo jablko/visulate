@@ -4,7 +4,7 @@ var backoff = 1;
 
 var svg = d3.select('body').append('svg');
 
-var clients = d3.select('body').append('div').attr('id', 'clients');
+var clients;
 
 function humanize(value)
 {
@@ -193,6 +193,11 @@ function humanize(value)
             length = result[0].length;
 
             svg.attr('height', 20 * length);
+
+            if (!clients)
+            {
+              clients = d3.select('body').append('div').attr('id', 'clients');
+            }
 
             clients.classed('disconnected', result[1] < 1);
 
