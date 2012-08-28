@@ -1,3 +1,9 @@
+body
+{
+  margin: 0 1em;
+  text-align: center;
+}
+
 rect
 {
   fill: #58b;
@@ -11,7 +17,20 @@ svg
   width: 100%;
 }
 
+#status
+{
+  background: #ff9;
+  border-radius: 0 0 .4em .4em;
+  display: inline-block;
+  padding: .2em 1em;
+}
+
 .chi
 {
   text-anchor: end;
+}
+
+.disconnected
+{
+  background: #fcc !important;
 }

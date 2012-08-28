@@ -1,4 +1,4 @@
-var status = d3.select('body').append('div');
+var status = d3.select('body').append('div').attr('id', 'status');
 
 var backoff = 1;
 
@@ -40,7 +40,7 @@ function humanize(value)
 
     skt.onclose = function ()
       {
-        status.text('Disconnected');
+        status.classed('disconnected', true).text('Disconnected');
 
         // The first reconnect attempt SHOULD be delayed by a random amount of
         // time.  The parameters by which this random delay is chosen are left
@@ -105,7 +105,7 @@ function humanize(value)
 
         var xPsql = d3.scale.linear()
           .domain([0, d3.max(svg.selectAll('rect').data().map(function (d) { return d[2]; }))])
-          .range([0, svg.node().parentNode.scrollWidth - xChi - 4]);
+          .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
 
         svg.selectAll('rect')
           .attr('width', function (d) { return xPsql(d[2]); })
@@ -119,7 +119,7 @@ function humanize(value)
 
     skt.onopen = function ()
       {
-        status.text('Connected.');
+        status.classed('disconnected', false).text('Connected.');
 
         backoff = 1;
 
@@ -156,7 +156,7 @@ function humanize(value)
 
             var xPsql = d3.scale.linear()
               .domain([0, d3.max(result.map(function (d) { return d[2]; }))])
-              .range([0, svg.node().parentNode.scrollWidth - xChi - 4]);
+              .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
 
             svg.selectAll('rect')
               .attr('width', function (d) { return xPsql(d[2]); })
