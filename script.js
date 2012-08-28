@@ -117,6 +117,8 @@ function humanize(value)
           .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
           .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
           .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
+
+        svg.attr('height', 20 * length);
       }
 
     skt.onopen = function ()
@@ -173,6 +175,8 @@ function humanize(value)
               .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
             length = result[0].length;
+
+            svg.attr('height', 20 * length);
 
             clients.classed('disconnected', result[1] < 1);
 
