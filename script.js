@@ -2,11 +2,39 @@ var status = d3.select('body').append('div');
 
 var backoff = 1;
 
-var tbody = d3.select('body').append('table').append('tbody');
+var svg = d3.select('body').append('svg');
+
+function humanize(value)
+{
+  var exponent = Math.floor(Math.log(1.1 * value) / Math.LN2 / 10);
+  if (exponent < 9)
+  {
+    value /= Math.pow(1024, exponent);
+  }
+
+  // Round only if more than three digits, never add precision
+
+  var result = value.toPrecision();
+  if (result.replace(/e[+-]\d+|\D/g, '').length > 3)
+  {
+    result = value.toPrecision(value > 1 ? 3 : 2);
+  }
+
+  // The prefix kilo is often used in fields of computer science and
+  // information technology with a meaning of multiplication by 1024 instead of
+  // 1000, contrary to international standards, in conjunction with the base
+  // unit byte and bit, in which case it is written with a capital letter K
+
+  result += ['K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y'][exponent - 1] || '';
+
+  return result;
+}
 
 (function connect()
   {
     status.text('Connecting...');
+
+    var length;
 
     var skt = new WebSocket('ws://' + location.host + '/skt');
 
@@ -35,21 +63,58 @@ var tbody = d3.select('body').append('table').append('tbody');
 
     skt.onmessage = function (evt)
       {
-        JSON.parse(evt.data).forEach(function (itm)
+        var result = JSON.parse(evt.data);
+        result.forEach(function (d)
           {
             // http://www.w3.org/TR/CSS21/syndata#value-def-identifier
-            var tr = d3.select('#\\00003' + itm[0].replace(/\./g, '\\.'));
-            if (tr.empty())
+            var g = d3.select('#\\00003' + d[0].replace(/\./g, '\\.'));
+            if (g.empty())
             {
-              tr = d3.select('tbody').append('tr').attr('id', itm[0]);
+              g = svg.append('g').attr('id', d[0]);
+
+              g.append('text')
+                .attr('class', 'chi')
+                .attr('y', 20 * length + 14) // vertical-align: middle;
+                .text(d[0]);
+
+              g.append('rect').datum(d)
+                .attr('height', 20)
+                .attr('y', 20 * length);
+
+              g.append('text').datum(d)
+                .attr('class', 'psql')
+                .attr('y', 20 * length + 14) // vertical-align: middle;
+                .text(humanize(d[2]));
+
+              length += 1;
             }
+            else
+            {
+              g.select('rect').datum(d);
 
-            var td = tr.selectAll('td').data(itm);
-
-            td.enter().append('td');
-
-            td.text(function (d) { return d; });
+              g.select('.psql').datum(d)
+                .text(humanize(d[2]));
+            }
           });
+
+        var chi = svg.selectAll('.chi');
+
+        var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
+
+        chi.attr('x', xChi);
+
+        var xPsql = d3.scale.linear()
+          .domain([0, d3.max(svg.selectAll('rect').data().map(function (d) { return d[2]; }))])
+          .range([0, svg.node().parentNode.scrollWidth - xChi - 4]);
+
+        svg.selectAll('rect')
+          .attr('width', function (d) { return xPsql(d[2]); })
+          .attr('x', xChi + 4);
+
+        svg.selectAll('.psql')
+          .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
+          .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
+          .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
       }
 
     skt.onopen = function ()
@@ -60,14 +125,52 @@ var tbody = d3.select('body').append('table').append('tbody');
 
         d3.json('/open', function (result)
           {
-            var tr = tbody.selectAll('tr').data(result);
-            tr.enter().append('tr');
-            tr.attr('id', function (d) { return d[0]; });
-            tr.exit().remove();
+            var g = svg.selectAll('g').data(result);
 
-            var td = tr.selectAll('td').data(function (d) { return d; });
-            td.enter().append('td');
-            td.text(function (d) { return d; });
+            g.enter().append('g').call(function ()
+              {
+                this.append('text')
+                  .attr('class', 'chi')
+                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
+
+                this.append('rect')
+                  .attr('height', 20)
+                  .attr('y', function (d, i) { return 20 * i; });
+
+                this.append('text')
+                  .attr('class', 'psql')
+                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
+              });
+
+            g.attr('id', function (d) { return d[0]; });
+
+            g.exit().remove();
+
+            var chi = svg.selectAll('.chi');
+
+            chi.text(function (d) { return d[0]; });
+
+            var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
+
+            chi.attr('x', xChi);
+
+            var xPsql = d3.scale.linear()
+              .domain([0, d3.max(result.map(function (d) { return d[2]; }))])
+              .range([0, svg.node().parentNode.scrollWidth - xChi - 4]);
+
+            svg.selectAll('rect')
+              .attr('width', function (d) { return xPsql(d[2]); })
+              .attr('x', xChi + 4);
+
+            var psql = svg.selectAll('.psql');
+
+            psql.text(function (d) { return humanize(d[2]); });
+
+            psql.attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
+              .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
+              .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
+
+            length = result.length;
           });
       }
   })();

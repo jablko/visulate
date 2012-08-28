@@ -1,0 +1,17 @@
+rect
+{
+  fill: #58b;
+  stroke: #fff;
+}
+
+svg
+{
+  font: 10px sans-serif;
+  shape-rendering: crispedges;
+  width: 100%;
+}
+
+.chi
+{
+  text-anchor: end;
+}
