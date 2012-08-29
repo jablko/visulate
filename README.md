@@ -56,7 +56,7 @@ This Wikipedia article [on Edward Tufte](http://en.wikipedia.org/wiki/Edward_Tuf
 
 > A chart with many series shown on a single pair of axes can often be easier to read when displayed as several separate pairs of axes placed next to each other
 
-The original inspiration for employing the Twisted WebSocket server support was to also use [the Python RRDtool bindings](http://oss.oetiker.ch/rrdtool/prog/rrdpython.en.html) and store statistics in a round-robin database instead of memory, however I haven't yet [figured out how](http://thread.gmane.org/gmane.comp.db.rrdtool.user/18737) to do this. [node.js](http://nodejs.org/) could be substituted for Twisted
+The original inspiration for employing Twisted was to also use [the Python RRDtool bindings](http://oss.oetiker.ch/rrdtool/prog/rrdpython.en.html) and store statistics in a round-robin database instead of memory, however I haven't yet [figured out how](http://thread.gmane.org/gmane.comp.db.rrdtool.user/18737) to do this. [node.js](http://nodejs.org/) could be substituted for Twisted
 
 
 Example
