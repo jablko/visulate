@@ -21,11 +21,11 @@ To configure Traffic Server to send log entries to this script, follow the instr
 
 Set `proxy.config.log.collation_host` to the hostname or address of the machine running this script. You can run this script on a different machine from the one running Traffic Server
 
-   CONFIG proxy.config.log.collation_host STRING example
+    CONFIG proxy.config.log.collation_host STRING example
 
 By default, this script listens for connections from web browsers on port 6011 and for connections from Traffic Server log collation clients on port 8085. Traffic Server connects to a log collation server on port 8085 by default, so you shouldn't need to configure `proxy.config.log.collation_port`
 
-   CONFIG proxy.config.log.collation_port INT 8085
+    CONFIG proxy.config.log.collation_port INT 8085
 
 Run the script and visit port 6011 with a web browser, e.g. http://localhost:6011
 
@@ -48,11 +48,11 @@ Currently the only available statistics are byte counts by client, but here are 
 * Hit/miss statistics
 * Totals of sliding windows, like last ten minutes
 * Time series as well as comparison of totals
-* Statistics like [Squidpeek](https://github.com/mnot/squidpeek)
-* Statistics like [Calamaris](http://cord.de/tools/squid/calamaris/)
+* Statistics [like Squidpeek](https://github.com/mnot/squidpeek)
+* Statistics [like Calamaris](http://cord.de/tools/squid/calamaris/)
 * Sorting and limiting, like top ten byte counts
 
-This Wikipedia article [on Edward Tufte] also has some inspirational ideas, such as the small multiple
+This Wikipedia article [on Edward Tufte](http://en.wikipedia.org/wiki/Edward_Tufte) also provides some inspiration, such as the small multiple
 
 > A chart with many series shown on a single pair of axes can often be easier to read when displayed as several separate pairs of axes placed next to each other
 
