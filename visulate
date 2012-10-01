@@ -43,7 +43,9 @@ class factory(protocol.Factory):
           entryLen = pickle.decode_long(data[offset + 12:offset + 16])
 
           chi = socket.inet_ntop(socket.AF_INET, data[offset + 36:offset + 40])
-          psql = pickle.decode_long(data[offset + 56:offset + 60])
+
+          # LogAccessHttp::marshal_proxy_resp_squid_len()
+          psql = pickle.decode_long(data[offset + 56:offset + 64])
 
           try:
             row = table[chi]
