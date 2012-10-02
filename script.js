@@ -2,7 +2,8 @@ var socket = d3.select('body').append('div').attr('id', 'socket');
 
 var backoff = 1;
 
-var svg = d3.select('body').append('svg');
+var chiSvg = d3.select('body').append('svg');
+var pqsnSvg = d3.select('body').append('svg');
 
 var clients;
 
@@ -74,7 +75,7 @@ function humanize(value)
               var g = d3.select('#\\00003' + d[0].replace(/\./g, '\\.'));
               if (g.empty())
               {
-                g = svg.append('g').attr('id', d[0]);
+                g = chiSvg.append('g').attr('id', d[0]);
 
                 g.append('text')
                   .attr('class', 'chi')
@@ -101,26 +102,26 @@ function humanize(value)
               }
             });
 
-          var chi = svg.selectAll('.chi');
+          var chi = chiSvg.selectAll('.chi');
 
           var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
 
           chi.attr('x', xChi);
 
           var xPsql = d3.scale.linear()
-            .domain([0, d3.max(svg.selectAll('rect').data().map(function (d) { return d[2]; }))])
-            .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
+            .domain([0, d3.max(chiSvg.selectAll('rect').data().map(function (d) { return d[2]; }))])
+            .range([0, chiSvg.node().parentNode.offsetWidth - xChi - 4]);
 
-          svg.selectAll('rect')
+          chiSvg.selectAll('rect')
             .attr('width', function (d) { return xPsql(d[2]); })
             .attr('x', xChi + 4);
 
-          svg.selectAll('.psql')
+          chiSvg.selectAll('.psql')
             .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
             .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
             .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
-          svg.attr('height', 20 * length);
+          chiSvg.attr('height', 20 * length);
         }
         else
         {
@@ -145,7 +146,10 @@ function humanize(value)
 
         d3.json('/open', function (result)
           {
-            var g = svg.selectAll('g').data(result[0]);
+            var chiTable = result[0];
+            var pqsnTable = result[1];
+
+            var g = chiSvg.selectAll('g').data(chiTable);
 
             g.enter().append('g').call(function ()
               {
@@ -166,7 +170,7 @@ function humanize(value)
 
             g.exit().remove();
 
-            var chi = svg.selectAll('.chi');
+            var chi = chiSvg.selectAll('.chi');
 
             chi.text(function (d) { return d[0]; });
 
@@ -175,14 +179,14 @@ function humanize(value)
             chi.attr('x', xChi);
 
             var xPsql = d3.scale.linear()
-              .domain([0, d3.max(result[0].map(function (d) { return d[2]; }))])
-              .range([0, svg.node().parentNode.offsetWidth - xChi - 4]);
+              .domain([0, d3.max(chiTable.map(function (d) { return d[2]; }))])
+              .range([0, chiSvg.node().parentNode.offsetWidth - xChi - 4]);
 
-            svg.selectAll('rect')
+            chiSvg.selectAll('rect')
               .attr('width', function (d) { return xPsql(d[2]); })
               .attr('x', xChi + 4);
 
-            var psql = svg.selectAll('.psql');
+            var psql = chiSvg.selectAll('.psql');
 
             psql.text(function (d) { return humanize(d[2]); });
 
@@ -190,24 +194,73 @@ function humanize(value)
               .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
               .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
-            length = result[0].length;
+            length = chiTable.length;
 
-            svg.attr('height', 20 * length);
+            chiSvg.attr('height', 20 * length);
+
+            var g = pqsnSvg.selectAll('g').data(pqsnTable);
+
+            g.enter().append('g').call(function ()
+              {
+                this.append('text')
+                  .attr('class', 'chi')
+                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
+
+                this.append('rect')
+                  .attr('height', 20)
+                  .attr('y', function (d, i) { return 20 * i; });
+
+                this.append('text')
+                  .attr('class', 'psql')
+                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
+              });
+
+            g.attr('id', function (d) { return d[0]; });
+
+            g.exit().remove();
+
+            var chi = pqsnSvg.selectAll('.chi');
+
+            chi.text(function (d) { return d[0]; });
+
+            var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
+
+            chi.attr('x', xChi);
+
+            var xPsql = d3.scale.linear()
+              .domain([0, d3.max(pqsnTable.map(function (d) { return d[2]; }))])
+              .range([0, pqsnSvg.node().parentNode.offsetWidth - xChi - 4]);
+
+            pqsnSvg.selectAll('rect')
+              .attr('width', function (d) { return xPsql(d[2]); })
+              .attr('x', xChi + 4);
+
+            var psql = pqsnSvg.selectAll('.psql');
+
+            psql.text(function (d) { return humanize(d[2]); });
+
+            psql.attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
+              .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
+              .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
+
+            length = pqsnTable.length;
+
+            pqsnSvg.attr('height', 20 * length);
 
             if (!clients)
             {
               clients = d3.select('body').append('div').attr('id', 'clients');
             }
 
-            clients.classed('disconnected', result[1] < 1);
+            clients.classed('disconnected', result[2] < 1);
 
-            if (result[1] == 1)
+            if (result[2] == 1)
             {
               clients.text('1 connected log collation client');
             }
             else
             {
-              clients.text(d3.format(',')(result[1]) + ' connected log collation clients');
+              clients.text(d3.format(',')(result[2]) + ' connected log collation clients');
             }
           });
       }
