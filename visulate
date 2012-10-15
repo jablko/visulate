@@ -5,24 +5,24 @@ from functools import partial
 from twisted.internet import protocol, reactor, tcp
 from twisted.web import resource, server, static
 
-chiTable = {}
-pqsnTable = {}
+chiData = {}
+pqsnData = {}
 
 # Connected WebSocket clients
 transport = set()
 
 # Connected log collation clients
-clients = 0
+clientCount = 0
 
 # Log collation server
 class factory(protocol.Factory):
   class protocol:
     def connectionLost(ctx, reason):
-      global clients
+      global clientCount
 
-      clients -= 1
+      clientCount -= 1
       for itm in transport:
-        itm.write(json.dumps(clients))
+        itm.write(json.dumps(clientCount))
 
     def dataReceived(ctx, data):
 
@@ -74,30 +74,30 @@ class factory(protocol.Factory):
           pqsn = data[start:end]
 
           try:
-            row = chiTable[chi]
+            itm = chiData[chi]
 
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            row = chiTable[chi] = [chi, 1, psql]
+            itm = chiData[chi] = [chi, 1, psql]
 
           else:
-            row[1] += 1
-            row[2] += psql
+            itm[1] += 1
+            itm[2] += psql
 
-          delta.append(row)
+          delta.append(itm)
 
           try:
-            row = pqsnTable[pqsn]
+            itm = pqsnData[pqsn]
 
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            row = pqsnTable[pqsn] = [pqsn, 1, psql]
+            itm = pqsnData[pqsn] = [pqsn, 1, psql]
 
           else:
-            row[1] += 1
-            row[2] += psql
+            itm[1] += 1
+            itm[2] += psql
 
           offset += entryLen
 
@@ -105,16 +105,16 @@ class factory(protocol.Factory):
           itm.write(json.dumps(delta))
 
     def makeConnection(ctx, nstTransport):
-      global clients
+      global clientCount
 
-      clients += 1
+      clientCount += 1
       for itm in transport:
-        itm.write(json.dumps(clients))
+        itm.write(json.dumps(clientCount))
 
 tcp.Port(8085, factory()).startListening()
 
 class open(resource.Resource):
-  render = lambda ctx, request: json.dumps((chiTable.values(), pqsnTable.values(), clients))
+  render = lambda ctx, request: json.dumps((chiData.values(), pqsnData.values(), clientCount))
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):

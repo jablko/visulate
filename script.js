@@ -1,11 +1,11 @@
-var socket = d3.select('body').append('div').attr('id', 'socket');
+var sktStatus = d3.select('body').append('div').attr('id', 'sktStatus');
 
 var backoff = 1;
 
 var chiSvg = d3.select('body').append('svg');
 var pqsnSvg = d3.select('body').append('svg');
 
-var clients;
+var clientCount;
 
 function humanize(value)
 {
@@ -35,7 +35,7 @@ function humanize(value)
 
 (function connect()
   {
-    socket.text('Connecting...');
+    sktStatus.text('Connecting...');
 
     var length;
 
@@ -43,7 +43,7 @@ function humanize(value)
 
     skt.onclose = function ()
       {
-        socket.classed('disconnected', true).text('Disconnected');
+        sktStatus.classed('disconnected', true).text('Disconnected');
 
         // The first reconnect attempt SHOULD be delayed by a random amount of
         // time.  The parameters by which this random delay is chosen are left
@@ -125,31 +125,31 @@ function humanize(value)
         }
         else
         {
-          clients.classed('disconnected', result < 1);
+          clientCount.classed('disconnected', result < 1);
 
           if (result == 1)
           {
-            clients.text('1 connected log collation client');
+            clientCount.text('1 connected log collation client');
           }
           else
           {
-            clients.text(d3.format(',')(result) + ' connected log collation clients');
+            clientCount.text(d3.format(',')(result) + ' connected log collation clients');
           }
         }
       }
 
     skt.onopen = function ()
       {
-        socket.classed('disconnected', false).text('Connected.');
+        sktStatus.classed('disconnected', false).text('Connected.');
 
         backoff = 1;
 
         d3.json('/open', function (result)
           {
-            var chiTable = result[0];
-            var pqsnTable = result[1];
+            var chiData = result[0];
+            var pqsnData = result[1];
 
-            var g = chiSvg.selectAll('g').data(chiTable);
+            var g = chiSvg.selectAll('g').data(chiData);
 
             g.enter().append('g').call(function ()
               {
@@ -179,7 +179,7 @@ function humanize(value)
             chi.attr('x', xChi);
 
             var xPsql = d3.scale.linear()
-              .domain([0, d3.max(chiTable.map(function (d) { return d[2]; }))])
+              .domain([0, d3.max(chiData.map(function (d) { return d[2]; }))])
               .range([0, chiSvg.node().parentNode.offsetWidth - xChi - 4]);
 
             chiSvg.selectAll('rect')
@@ -194,11 +194,11 @@ function humanize(value)
               .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
               .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
-            length = chiTable.length;
+            length = chiData.length;
 
             chiSvg.attr('height', 20 * length);
 
-            var g = pqsnSvg.selectAll('g').data(pqsnTable);
+            var g = pqsnSvg.selectAll('g').data(pqsnData);
 
             g.enter().append('g').call(function ()
               {
@@ -228,7 +228,7 @@ function humanize(value)
             chi.attr('x', xChi);
 
             var xPsql = d3.scale.linear()
-              .domain([0, d3.max(pqsnTable.map(function (d) { return d[2]; }))])
+              .domain([0, d3.max(pqsnData.map(function (d) { return d[2]; }))])
               .range([0, pqsnSvg.node().parentNode.offsetWidth - xChi - 4]);
 
             pqsnSvg.selectAll('rect')
@@ -243,24 +243,24 @@ function humanize(value)
               .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
               .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
 
-            length = pqsnTable.length;
+            length = pqsnData.length;
 
             pqsnSvg.attr('height', 20 * length);
 
-            if (!clients)
+            if (!clientCount)
             {
-              clients = d3.select('body').append('div').attr('id', 'clients');
+              clientCount = d3.select('body').append('div').attr('id', 'clientCount');
             }
 
-            clients.classed('disconnected', result[2] < 1);
+            clientCount.classed('disconnected', result[2] < 1);
 
             if (result[2] == 1)
             {
-              clients.text('1 connected log collation client');
+              clientCount.text('1 connected log collation client');
             }
             else
             {
-              clients.text(d3.format(',')(result[2]) + ' connected log collation clients');
+              clientCount.text(d3.format(',')(result[2]) + ' connected log collation clients');
             }
           });
       }

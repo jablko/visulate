@@ -17,7 +17,7 @@ svg
   width: 100%;
 }
 
-#clients
+#clientCount
 {
   background: #ff9;
   border-radius: .4em;
@@ -26,7 +26,7 @@ svg
   padding: .2em 1em;
 }
 
-#socket
+#sktStatus
 {
   background: #ff9;
   border-radius: 0 0 .4em .4em;
