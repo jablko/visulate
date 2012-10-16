@@ -71,7 +71,7 @@ class factory(protocol.Factory):
           # LogAccessHttp::marshal_server_host_name()
           start = end
           end = data.index('\0', start)
-          pqsn = data[start:end]
+          pqsn = '.'.join(data[start:end].rsplit('.', 2)[-2:])
 
           try:
             itm = chiData[chi]
