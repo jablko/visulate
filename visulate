@@ -5,6 +5,11 @@ from functools import partial
 from twisted.internet import protocol, reactor, tcp
 from twisted.web import resource, server, static
 
+# http://www.iana.org/domains/root/db
+generic = set('com,info,net,org'.split(','))
+genericRestricted = set('biz,name,pro'.split(','))
+sponsored = set('aero,asia,cat,coop,edu,gov,int,jobs,mil,mobi,museum,post,tel,travel,xxx'.split(','))
+
 chiData = {}
 pqsnData = {}
 
@@ -71,7 +76,10 @@ class factory(protocol.Factory):
           # LogAccessHttp::marshal_server_host_name()
           start = end
           end = data.index('\0', start)
-          pqsn = '.'.join(data[start:end].rsplit('.', 2)[-2:])
+          pqsn = data[start:end]
+
+          pqsn = pqsn.rsplit('.', 3)
+          pqsn = '.'.join(pqsn[-2 if pqsn[-1] in generic | genericRestricted | sponsored else -3:])
 
           try:
             itm = chiData[chi]
