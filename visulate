@@ -79,7 +79,11 @@ class factory(protocol.Factory):
           pqsn = data[start:end]
 
           pqsn = pqsn.rsplit('.', 3)
-          pqsn = '.'.join(pqsn[-2 if pqsn[-1] in generic | genericRestricted | sponsored or pqsn[-3] == 'www' else -3:])
+          try:
+            pqsn = '.'.join(pqsn[-2 if pqsn[-1] in generic | genericRestricted | sponsored or pqsn[-3] == 'www' else -3:])
+
+          except IndexError:
+            pqsn = '.'.join(pqsn[-2:])
 
           try:
             itm = chiData[chi]
