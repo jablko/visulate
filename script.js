@@ -1,14 +1,17 @@
-var sktStatus = d3.select('body').append('div').attr('id', 'sktStatus');
+var sktStatus = d3.select('body').append('div').attr('id', 'sktStatus'), clientCount;
 
-var backoff = 1;
+function chi(d) { return d[0]; }
+function pqsn(d) { return d[0]; }
+function psql(d) { return d[1][1]; }
 
-var chiSvg = d3.select('body').append('svg');
-var pqsnSvg = d3.select('body').append('svg');
-
-var clientCount;
-
-function humanize(value)
+function format(value)
 {
+  // Avoid divide by zero
+  if (!value)
+  {
+    return value;
+  }
+
   var exponent = Math.floor(Math.log(1.1 * value) / Math.LN2 / 10);
   if (exponent < 9)
   {
@@ -33,11 +36,182 @@ function humanize(value)
   return result;
 }
 
+function barChart(div)
+{
+  var svg = div.append('svg'), g = svg.append('g');
+
+  var x = d3.scale.linear();
+
+  function my(data, begin)
+  {
+    var textChi = g.selectAll('text.chi').data(data.slice(begin, begin + 8));
+
+    textChi.enter().append('text')
+      .attr('class', 'chi')
+      .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle
+
+    textChi.text(function (d) { return chi(d); });
+
+    var margin = d3.max(textChi[0].map(function (itm) { return itm.getComputedTextLength(); }));
+
+    g.attr('transform', 'translate(' + margin + ')');
+
+    x.domain([0, psql(data[0])])
+      .range([0, svg.node().parentNode.offsetWidth - margin - 6]);
+
+    var rectPsql = g.selectAll('rect.psql').data(data.slice(begin, begin + 8));
+
+    rectPsql.enter().append('rect')
+      .attr('class', 'psql')
+      .attr('height', 20)
+      .attr('x', 6)
+      .attr('y', function (d, i) { return 20 * i; });
+
+    rectPsql.attr('width', function (d) { return x(psql(d)); });
+
+    var textPsql = g.selectAll('text.psql').data(data.slice(begin, begin + 8));
+
+    textPsql.enter().append('text')
+      .attr('class', 'psql')
+      .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle
+
+    textPsql.text(function (d) { return format(psql(d)); });
+
+    textPsql.attr('fill', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? '#000' : '#fff'; })
+      .attr('text-anchor', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? 'start' : 'end'; })
+      .attr('x', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? x(psql(d)) + 12 : x(psql(d)); });
+  }
+
+  return my;
+}
+
+function chart(div)
+{
+  var svg = div.append('svg'), g = svg.append('g');
+
+  // Add the area path
+  var pathArea = g.append('path').attr('class', 'area');
+
+  // Add the line path
+  var pathLine = g.append('path').attr('class', 'line');
+
+  // Add the extent
+  var extent = g.append('rect').attr('class', 'extent');
+
+  // Add the x-axis
+  var x = d3.scale.linear(),
+    xAxis = d3.svg.axis().scale(x),
+    gXAxis = g.append('g').attr('class', 'x axis').call(xAxis);
+
+  var marginBottom = gXAxis.node().getBBox().height, marginRight = 0;
+
+  // Add the y-axis
+  var y = d3.scale.linear(),
+    yAxis = d3.svg.axis().orient('left').scale(y).tickFormat(format),
+    gYAxis = g.append('g').attr('class', 'y axis').call(yAxis);
+
+  var marginLeft = 0, marginTop = gYAxis.node().getBBox().y;
+
+  y.range([160 + marginTop - marginBottom, 0]);
+  gXAxis.attr('transform', 'translate(0,' + (160 + marginTop - marginBottom) + ')');
+  extent.attr('height', 160 + marginTop - marginBottom);
+
+  var area = d3.svg.area()
+    .interpolate('monotone')
+    .x(function (d, i) { return x(i); })
+    .y0(160 + marginTop - marginBottom)
+    .y1(function (d) { return y(psql(d)); });
+
+  var line = d3.svg.line()
+    .interpolate('monotone')
+    .x(function (d, i) { return x(i); })
+    .y(function (d) { return y(psql(d)); });
+
+  var data, nstBarChart = barChart(div);
+
+  var control = g.append('rect')
+    .attr('class', 'control')
+    .attr('height', 160 + marginTop - marginBottom)
+    .on('click', function ()
+      {
+        var begin = Math.max(0, Math.min(data.length - 8, Math.round(x.invert(d3.event.pageX - svg.node().getBoundingClientRect().left + marginLeft - x(8) / 2))));
+
+        extent.attr('x', x(begin));
+
+        nstBarChart(data, begin);
+      });
+
+  function my(nstData)
+  {
+    data = [];
+    for (var itm in nstData)
+    {
+      data.push([itm, nstData[itm]]);
+    }
+
+    data.sort(function (a, b) { return d3.descending(psql(a), psql(b)); });
+
+    var span = psql(data[0]);
+
+    var step = Math.pow(1024, Math.floor(Math.log(span / 4) / Math.LN2 / 10));
+    step *= Math.pow(10, Math.floor(Math.log(span / 4 / step) / Math.LN10));
+
+    var err = 4 / span * step;
+    if (err < 1.5 / 10) step *= 10; else if (err < 1.5 / 5) step *= 5; else if (err < 1.5 / 2) step *= 2;
+
+    span = Math.ceil(span / step) * step;
+
+    y.domain([0, span]);
+    yAxis.tickValues(d3.range(0, span + 1, step));
+
+    // Add the y-axis
+    gYAxis.call(yAxis);
+
+    marginLeft = Math.min(marginLeft, gYAxis.node().getBBox().x);
+
+    x.domain([0, data.length])
+      .range([0, svg.node().parentNode.offsetWidth + marginLeft - marginRight]);
+
+    // Add the x-axis
+    gXAxis.call(xAxis);
+
+    if (marginRight < gXAxis.node().getBBox().width - svg.node().parentNode.offsetWidth - marginLeft)
+    {
+      marginRight = gXAxis.node().getBBox().width - svg.node().parentNode.offsetWidth - marginLeft;
+
+      x.range([0, svg.node().parentNode.offsetWidth + marginLeft - marginRight]);
+      gXAxis.call(xAxis);
+    }
+
+    g.attr('transform', 'translate(' + -marginLeft + ',' + -marginTop + ')');
+
+    // Add the area path
+    pathArea.attr('d', area(data))
+
+    // Add the line path
+    pathLine.attr('d', line(data));
+
+    // Add the extent
+    extent.attr('width', x(8));
+
+    control.attr('width', svg.node().parentNode.offsetWidth + marginLeft - marginRight);
+
+    nstBarChart(data, 0);
+  }
+
+  return my;
+}
+
+var chiData, pqsnData;
+
+var chiChart = chart(d3.select('body').append('div')),
+  pqsnChart = chart(d3.select('body').append('div'));
+
+var backoff = 0;
+
 (function connect()
   {
     sktStatus.text('Connecting...');
-
-    var length;
 
     var skt = new WebSocket('ws://' + location.host + '/skt');
 
@@ -52,88 +226,48 @@ function humanize(value)
         // different interval from which to select a delay length based on
         // implementation experience and particular application
 
-        setTimeout(connect, Math.random() * 5000 * backoff);
+        setTimeout(connect, Math.random() * 5000 << backoff);
 
         // Should the first reconnect attempt fail, subsequent reconnect
         // attempts SHOULD be delayed by increasingly longer amounts of time,
         // using a method such as truncated binary exponential backoff
 
-        if (backoff < 1 << 5)
+        if (backoff < 5)
         {
-          backoff <<= 1;
+          backoff += 1;
         }
       }
 
     skt.onmessage = function (evt)
       {
-        var result = JSON.parse(evt.data);
-        if (result instanceof Array)
+        var data = JSON.parse(evt.data);
+        if (data[0])
         {
-          result.forEach(function (d)
-            {
-              // http://www.w3.org/TR/CSS21/syndata#value-def-identifier
-              var g = d3.select('#\\00003' + d[0].replace(/\./g, '\\.'));
-              if (g.empty())
-              {
-                g = chiSvg.append('g').attr('id', d[0]);
+          for (var itm in data[0])
+          {
+            chiData[itm] = data[0][itm];
+          }
 
-                g.append('text')
-                  .attr('class', 'chi')
-                  .attr('y', 20 * length + 14) // vertical-align: middle;
-                  .text(d[0]);
+          chiChart(chiData);
 
-                g.append('rect').datum(d)
-                  .attr('height', 20)
-                  .attr('y', 20 * length);
+          for (var itm in data[1])
+          {
+            pqsnData[itm] = data[1][itm];
+          }
 
-                g.append('text').datum(d)
-                  .attr('class', 'psql')
-                  .attr('y', 20 * length + 14) // vertical-align: middle;
-                  .text(humanize(d[2]));
-
-                length += 1;
-              }
-              else
-              {
-                g.select('rect').datum(d);
-
-                g.select('.psql').datum(d)
-                  .text(humanize(d[2]));
-              }
-            });
-
-          var chi = chiSvg.selectAll('.chi');
-
-          var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
-
-          chi.attr('x', xChi);
-
-          var xPsql = d3.scale.linear()
-            .domain([0, d3.max(chiSvg.selectAll('rect').data().map(function (d) { return d[2]; }))])
-            .range([0, chiSvg.node().parentNode.offsetWidth - xChi - 4]);
-
-          chiSvg.selectAll('rect')
-            .attr('width', function (d) { return xPsql(d[2]); })
-            .attr('x', xChi + 4);
-
-          chiSvg.selectAll('.psql')
-            .attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
-            .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
-            .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
-
-          chiSvg.attr('height', 20 * length);
+          pqsnChart(pqsnData);
         }
         else
         {
-          clientCount.classed('disconnected', result < 1);
+          clientCount.classed('disconnected', data < 1);
 
-          if (result == 1)
+          if (data == 1)
           {
             clientCount.text('1 connected log collation client');
           }
           else
           {
-            clientCount.text(d3.format(',')(result) + ' connected log collation clients');
+            clientCount.text(d3.format(',')(data) + ' connected log collation clients');
           }
         }
       }
@@ -142,126 +276,29 @@ function humanize(value)
       {
         sktStatus.classed('disconnected', false).text('Connected.');
 
-        backoff = 1;
-
-        d3.json('/open', function (result)
+        d3.json('/open', function (data)
           {
-            var chiData = result[0];
-            var pqsnData = result[1];
+            chiChart(chiData = data[0]);
 
-            var g = chiSvg.selectAll('g').data(chiData);
-
-            g.enter().append('g').call(function ()
-              {
-                this.append('text')
-                  .attr('class', 'chi')
-                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
-
-                this.append('rect')
-                  .attr('height', 20)
-                  .attr('y', function (d, i) { return 20 * i; });
-
-                this.append('text')
-                  .attr('class', 'psql')
-                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
-              });
-
-            g.attr('id', function (d) { return d[0]; });
-
-            g.exit().remove();
-
-            var chi = chiSvg.selectAll('.chi');
-
-            chi.text(function (d) { return d[0]; });
-
-            var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
-
-            chi.attr('x', xChi);
-
-            var xPsql = d3.scale.linear()
-              .domain([0, d3.max(chiData.map(function (d) { return d[2]; }))])
-              .range([0, chiSvg.node().parentNode.offsetWidth - xChi - 4]);
-
-            chiSvg.selectAll('rect')
-              .attr('width', function (d) { return xPsql(d[2]); })
-              .attr('x', xChi + 4);
-
-            var psql = chiSvg.selectAll('.psql');
-
-            psql.text(function (d) { return humanize(d[2]); });
-
-            psql.attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
-              .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
-              .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
-
-            length = chiData.length;
-
-            chiSvg.attr('height', 20 * length);
-
-            var g = pqsnSvg.selectAll('g').data(pqsnData);
-
-            g.enter().append('g').call(function ()
-              {
-                this.append('text')
-                  .attr('class', 'chi')
-                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
-
-                this.append('rect')
-                  .attr('height', 20)
-                  .attr('y', function (d, i) { return 20 * i; });
-
-                this.append('text')
-                  .attr('class', 'psql')
-                  .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle;
-              });
-
-            g.attr('id', function (d) { return d[0]; });
-
-            g.exit().remove();
-
-            var chi = pqsnSvg.selectAll('.chi');
-
-            chi.text(function (d) { return d[0]; });
-
-            var xChi = d3.max(chi[0].map(function (itm) { return itm.getComputedTextLength(); }));
-
-            chi.attr('x', xChi);
-
-            var xPsql = d3.scale.linear()
-              .domain([0, d3.max(pqsnData.map(function (d) { return d[2]; }))])
-              .range([0, pqsnSvg.node().parentNode.offsetWidth - xChi - 4]);
-
-            pqsnSvg.selectAll('rect')
-              .attr('width', function (d) { return xPsql(d[2]); })
-              .attr('x', xChi + 4);
-
-            var psql = pqsnSvg.selectAll('.psql');
-
-            psql.text(function (d) { return humanize(d[2]); });
-
-            psql.attr('fill', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? '#000' : '#fff'; })
-              .attr('text-anchor', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? 'start' : 'end'; })
-              .attr('x', function (d) { return this.getComputedTextLength() + 8 > xPsql(d[2]) ? xChi + xPsql(d[2]) + 8 : xChi + xPsql(d[2]); });
-
-            length = pqsnData.length;
-
-            pqsnSvg.attr('height', 20 * length);
+            pqsnChart(pqsnData = data[1]);
 
             if (!clientCount)
             {
               clientCount = d3.select('body').append('div').attr('id', 'clientCount');
             }
 
-            clientCount.classed('disconnected', result[2] < 1);
+            clientCount.classed('disconnected', data[2] < 1);
 
-            if (result[2] == 1)
+            if (data[2] == 1)
             {
               clientCount.text('1 connected log collation client');
             }
             else
             {
-              clientCount.text(d3.format(',')(result[2]) + ' connected log collation clients');
+              clientCount.text(d3.format(',')(data[2]) + ' connected log collation clients');
             }
           });
+
+        backoff = 0;
       }
   })();

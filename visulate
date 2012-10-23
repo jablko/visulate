@@ -40,7 +40,8 @@ class factory(protocol.Factory):
         # transfer length for each entry in segment, update table and build
         # delta of changed rows
 
-        delta = []
+        chiDelta = {}
+        pqsnDelta = {}
 
         entryCount = pickle.decode_long(data[20:24])
 
@@ -91,13 +92,13 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = chiData[chi] = [chi, 1, psql]
+            itm = chiData[chi] = [1, psql]
 
           else:
-            itm[1] += 1
-            itm[2] += psql
+            itm[0] += 1
+            itm[1] += psql
 
-          delta.append(itm)
+          chiDelta[chi] = itm
 
           try:
             itm = pqsnData[pqsn]
@@ -105,16 +106,18 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = pqsnData[pqsn] = [pqsn, 1, psql]
+            itm = pqsnData[pqsn] = [1, psql]
 
           else:
-            itm[1] += 1
-            itm[2] += psql
+            itm[0] += 1
+            itm[1] += psql
+
+          pqsnDelta[pqsn] = itm
 
           offset += entryLen
 
         for itm in transport:
-          itm.write(json.dumps(delta))
+          itm.write(json.dumps((chiDelta, pqsnDelta)))
 
     def makeConnection(ctx, nstTransport):
       global clientCount
@@ -126,7 +129,7 @@ class factory(protocol.Factory):
 tcp.Port(8085, factory()).startListening()
 
 class open(resource.Resource):
-  render = lambda ctx, request: json.dumps((chiData.values(), pqsnData.values(), clientCount))
+  render = lambda ctx, request: json.dumps((chiData, pqsnData, clientCount))
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):
