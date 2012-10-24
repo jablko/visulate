@@ -129,12 +129,14 @@ function chart(div)
 
   var data, nstBarChart = barChart(div);
 
+  var begin = 0;
+
   var control = g.append('rect')
     .attr('class', 'control')
     .attr('height', 160 + marginTop - marginBottom)
     .on('click', function ()
       {
-        var begin = Math.max(0, Math.min(data.length - 8, Math.round(x.invert(d3.event.pageX - svg.node().getBoundingClientRect().left + marginLeft - x(8) / 2))));
+        begin = Math.max(0, Math.min(data.length - 8, Math.round(x.invert(d3.event.pageX - svg.node().getBoundingClientRect().left + marginLeft - x(8) / 2))));
 
         extent.attr('x', x(begin));
 
@@ -196,7 +198,7 @@ function chart(div)
 
     control.attr('width', svg.node().parentNode.offsetWidth + marginLeft - marginRight);
 
-    nstBarChart(data, 0);
+    nstBarChart(data, begin);
   }
 
   return my;
