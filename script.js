@@ -38,7 +38,7 @@ function format(value)
 
 function barChart(div)
 {
-  var svg = div.append('svg'), g = svg.append('g');
+  var svg = div.append('svg').attr('class', 'bar'), g = svg.append('g');
 
   var x = d3.scale.linear();
 
@@ -87,7 +87,7 @@ function barChart(div)
 
 function chart(div)
 {
-  var svg = div.append('svg'), g = svg.append('g');
+  var svg = div.append('svg').attr('class', 'line'), g = svg.append('g');
 
   // Add the area path
   var pathArea = g.append('path').attr('class', 'area');
@@ -112,14 +112,14 @@ function chart(div)
 
   var marginLeft = 0, marginTop = gYAxis.node().getBBox().y;
 
-  y.range([160 + marginTop - marginBottom, 0]);
-  gXAxis.attr('transform', 'translate(0,' + (160 + marginTop - marginBottom) + ')');
-  extent.attr('height', 160 + marginTop - marginBottom);
+  y.range([parseInt(svg.style('height')) + marginTop - marginBottom, 0]);
+  gXAxis.attr('transform', 'translate(0,' + (parseInt(svg.style('height')) + marginTop - marginBottom) + ')');
+  extent.attr('height', parseInt(svg.style('height')) + marginTop - marginBottom);
 
   var area = d3.svg.area()
     .interpolate('monotone')
     .x(function (d, i) { return x(i); })
-    .y0(160 + marginTop - marginBottom)
+    .y0(parseInt(svg.style('height')) + marginTop - marginBottom)
     .y1(function (d) { return y(psql(d)); });
 
   var line = d3.svg.line()
@@ -133,7 +133,7 @@ function chart(div)
 
   var control = g.append('rect')
     .attr('class', 'control')
-    .attr('height', 160 + marginTop - marginBottom)
+    .attr('height', parseInt(svg.style('height')) + marginTop - marginBottom)
     .on('click', function ()
       {
         begin = Math.max(0, Math.min(data.length - 8, Math.round(x.invert(d3.event.pageX - svg.node().getBoundingClientRect().left + marginLeft - x(8) / 2))));
@@ -153,18 +153,8 @@ function chart(div)
 
     data.sort(function (a, b) { return d3.descending(psql(a), psql(b)); });
 
-    var span = psql(data[0]);
-
-    var step = Math.pow(1024, Math.floor(Math.log(span / 4) / Math.LN2 / 10));
-    step *= Math.pow(10, Math.floor(Math.log(span / 4 / step) / Math.LN10));
-
-    var err = 4 / span * step;
-    if (err < 1.5 / 10) step *= 10; else if (err < 1.5 / 5) step *= 5; else if (err < 1.5 / 2) step *= 2;
-
-    span = Math.ceil(span / step) * step;
-
-    y.domain([0, span]);
-    yAxis.tickValues(d3.range(0, span + 1, step));
+    y.domain([0, psql(data[0])]);
+    yAxis.tickValues([0, psql(data[0])]);
 
     // Add the y-axis
     gYAxis.call(yAxis);

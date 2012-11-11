@@ -5,6 +5,13 @@ body
   text-align: center;
 }
 
+path.line
+{
+  fill: none;
+  stroke: #666;
+  stroke-width: 1.5px;
+}
+
 rect.psql
 {
   fill: #58b;
@@ -15,9 +22,18 @@ rect.psql
 svg
 {
   font: 10px sans-serif;
-  height: 160px;
   margin: 1em 0;
   width: 100%;
+}
+
+svg.bar
+{
+  height: 160px;
+}
+
+svg.line
+{
+  height: 80px;
 }
 
 text.chi
@@ -80,11 +96,4 @@ text.chi
   fill: #58b;
   opacity: .3;
   shape-rendering: crispEdges;
-}
-
-.line
-{
-  fill: none;
-  stroke: #666;
-  stroke-width: 1.5px;
 }
