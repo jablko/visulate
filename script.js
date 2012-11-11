@@ -2,7 +2,11 @@ var sktStatus = d3.select('body').append('div').attr('id', 'sktStatus'), clientC
 
 function chi(d) { return d[0]; }
 function pqsn(d) { return d[0]; }
-function psql(d) { return d[1][1]; }
+
+function all(d) { return d[1][0]; }
+function hit(d) { return d[1][1]; }
+
+function psql(d) { return d[1]; }
 
 function format(value)
 {
@@ -56,18 +60,28 @@ function barChart(div)
 
     g.attr('transform', 'translate(' + margin + ')');
 
-    x.domain([0, psql(data[0])])
+    x.domain([0, psql(all(data[0]))])
       .range([0, svg.node().parentNode.offsetWidth - margin - 6]);
 
-    var rectPsql = g.selectAll('rect.psql').data(data.slice(begin, begin + 8));
+    var rectAll = g.selectAll('rect.all').data(data.slice(begin, begin + 8));
 
-    rectPsql.enter().append('rect')
-      .attr('class', 'psql')
+    rectAll.enter().append('rect')
+      .attr('class', 'all')
       .attr('height', 20)
       .attr('x', 6)
       .attr('y', function (d, i) { return 20 * i; });
 
-    rectPsql.attr('width', function (d) { return x(psql(d)); });
+    rectAll.attr('width', function (d) { return x(psql(all(d))); });
+
+    var rectHit = g.selectAll('rect.hit').data(data.slice(begin, begin + 8));
+
+    rectHit.enter().append('rect')
+      .attr('class', 'hit')
+      .attr('height', 19)
+      .attr('x', 6.5)
+      .attr('y', function (d, i) { return 20 * i + .5; });
+
+    rectHit.attr('width', function (d) { return x(psql(hit(d))); });
 
     var textPsql = g.selectAll('text.psql').data(data.slice(begin, begin + 8));
 
@@ -75,11 +89,11 @@ function barChart(div)
       .attr('class', 'psql')
       .attr('y', function (d, i) { return 20 * i + 14; }); // vertical-align: middle
 
-    textPsql.text(function (d) { return format(psql(d)); });
+    textPsql.text(function (d) { return format(psql(all(d))); });
 
-    textPsql.attr('fill', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? '#000' : '#fff'; })
-      .attr('text-anchor', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? 'start' : 'end'; })
-      .attr('x', function (d) { return this.getComputedTextLength() + 12 > x(psql(d)) ? x(psql(d)) + 12 : x(psql(d)); });
+    textPsql.attr('fill', function (d) { return this.getComputedTextLength() + 12 > x(psql(all(d))) ? '#000' : '#fff'; })
+      .attr('text-anchor', function (d) { return this.getComputedTextLength() + 12 > x(psql(all(d))) ? 'start' : 'end'; })
+      .attr('x', function (d) { return this.getComputedTextLength() + 12 > x(psql(all(d))) ? x(psql(all(d))) + 12 : x(psql(all(d))); });
   }
 
   return my;
@@ -120,12 +134,12 @@ function chart(div)
     .interpolate('monotone')
     .x(function (d, i) { return x(i); })
     .y0(parseInt(svg.style('height')) + marginTop - marginBottom)
-    .y1(function (d) { return y(psql(d)); });
+    .y1(function (d) { return y(psql(all(d))); });
 
   var line = d3.svg.line()
     .interpolate('monotone')
     .x(function (d, i) { return x(i); })
-    .y(function (d) { return y(psql(d)); });
+    .y(function (d) { return y(psql(all(d))); });
 
   var data, nstBarChart = barChart(div);
 
@@ -151,10 +165,10 @@ function chart(div)
       data.push([itm, nstData[itm]]);
     }
 
-    data.sort(function (a, b) { return d3.descending(psql(a), psql(b)); });
+    data.sort(function (a, b) { return d3.descending(psql(all(a)), psql(all(b))); });
 
-    y.domain([0, psql(data[0])]);
-    yAxis.tickValues([0, psql(data[0])]);
+    y.domain([0, psql(all(data[0]))]);
+    yAxis.tickValues([0, psql(all(data[0]))]);
 
     // Add the y-axis
     gYAxis.call(yAxis);

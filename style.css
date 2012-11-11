@@ -12,11 +12,17 @@ path.line
   stroke-width: 1.5px;
 }
 
-rect.psql
+rect.all
 {
   fill: #58b;
   shape-rendering: crispEdges;
   stroke: #fff;
+}
+
+rect.hit
+{
+  fill: #f60;
+  shape-rendering: crispEdges;
 }
 
 svg

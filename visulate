@@ -51,6 +51,8 @@ class factory(protocol.Factory):
 
           chi = socket.inet_ntop(socket.AF_INET, data[offset + 36:offset + 40])
 
+          crc = pickle.decode_long(data[offset + 40:offset + 48])
+
           # LogAccessHttp::marshal_proxy_resp_squid_len()
           psql = pickle.decode_long(data[offset + 56:offset + 64])
 
@@ -92,11 +94,15 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = chiData[chi] = [1, psql]
+            itm = chiData[chi] = [[1, psql], [1, psql] if chr(crc) == '1' else [0, 0]]
 
           else:
-            itm[0] += 1
-            itm[1] += psql
+            itm[0][0] += 1
+            itm[0][1] += psql
+
+            if chr(crc) == '1':
+              itm[1][0] += 1
+              itm[1][1] += psql
 
           chiDelta[chi] = itm
 
@@ -106,11 +112,15 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = pqsnData[pqsn] = [1, psql]
+            itm = pqsnData[pqsn] = [[1, psql], [1, psql] if chr(crc) == '1' else [0, 0]]
 
           else:
-            itm[0] += 1
-            itm[1] += psql
+            itm[0][0] += 1
+            itm[0][1] += psql
+
+            if chr(crc) == '1':
+              itm[1][0] += 1
+              itm[1][1] += psql
 
           pqsnDelta[pqsn] = itm
 
