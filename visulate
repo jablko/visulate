@@ -10,6 +10,11 @@ generic = set('com,info,net,org'.split(','))
 genericRestricted = set('biz,name,pro'.split(','))
 sponsored = set('aero,asia,cat,coop,edu,gov,int,jobs,mil,mobi,museum,post,tel,travel,xxx'.split(','))
 
+# SquidLogCode
+SQUID_LOG_TCP_HIT = '1'
+SQUID_LOG_TCP_REFRESH_HIT = '5'
+SQUID_LOG_TCP_IMS_HIT = '9'
+
 chiData = {}
 pqsnData = {}
 
@@ -51,7 +56,7 @@ class factory(protocol.Factory):
 
           chi = socket.inet_ntop(socket.AF_INET, data[offset + 36:offset + 40])
 
-          crc = pickle.decode_long(data[offset + 40:offset + 48])
+          crc = chr(pickle.decode_long(data[offset + 40:offset + 48]))
 
           # LogAccessHttp::marshal_proxy_resp_squid_len()
           psql = pickle.decode_long(data[offset + 56:offset + 64])
@@ -94,13 +99,13 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = chiData[chi] = [[1, psql], [1, psql] if chr(crc) == '1' else [0, 0]]
+            itm = chiData[chi] = [[1, psql], [1, psql] if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT) else [0, 0]]
 
           else:
             itm[0][0] += 1
             itm[0][1] += psql
 
-            if chr(crc) == '1':
+            if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT):
               itm[1][0] += 1
               itm[1][1] += psql
 
@@ -112,13 +117,13 @@ class factory(protocol.Factory):
           except KeyError:
 
             # TypeError: 'tuple' object does not support item assignment
-            itm = pqsnData[pqsn] = [[1, psql], [1, psql] if chr(crc) == '1' else [0, 0]]
+            itm = pqsnData[pqsn] = [[1, psql], [1, psql] if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT) else [0, 0]]
 
           else:
             itm[0][0] += 1
             itm[0][1] += psql
 
-            if chr(crc) == '1':
+            if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT):
               itm[1][0] += 1
               itm[1][1] += psql
 
