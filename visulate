@@ -1,9 +1,20 @@
 #!/usr/bin/env python
 
-import json, pickle, socket, websockets
+import json, pickle, re, socket, websockets
 from functools import partial
 from twisted.internet import protocol, reactor, tcp
 from twisted.web import resource, server, static
+
+# IPv4address = dec-octet "." dec-octet "." dec-octet "." dec-octet
+#
+# dec-octet   = DIGIT                 ; 0-9
+#             / %x31-39 DIGIT         ; 10-99
+#             / "1" 2DIGIT            ; 100-199
+#             / "2" %x30-34 DIGIT     ; 200-249
+#             / "25" %x30-35          ; 250-255
+
+decOctet = '(?:\d|[1-9]\d|1\d{2}|2[0-4]\d|25[0-5])'
+ipv4Address = '{decOctet}\.{decOctet}\.{decOctet}\.{decOctet}'.format(decOctet=decOctet)
 
 # http://www.iana.org/domains/root/db
 generic = set('com,info,net,org'.split(','))
@@ -86,12 +97,20 @@ class factory(protocol.Factory):
           end = data.index('\0', start)
           pqsn = data[start:end]
 
-          pqsn = pqsn.rsplit('.', 3)
-          try:
-            pqsn = '.'.join(pqsn[-2 if pqsn[-1] in generic | genericRestricted | sponsored or pqsn[-3] == 'www' else -3:])
+          # The syntax rule for host is ambiguous because it does not
+          # completely distinguish between an IPv4address and a reg-name.  In
+          # order to disambiguate the syntax, we apply the "first-match-wins"
+          # algorithm: If host matches the rule for IPv4address, then it should
+          # be considered an IPv4 address literal and not a reg-name
 
-          except IndexError:
-            pqsn = '.'.join(pqsn[-2:])
+          if not re.match(ipv4Address, pqsn):
+
+            pqsn = pqsn.rsplit('.', 3)
+            try:
+              pqsn = '.'.join(pqsn[-2 if pqsn[-1] in generic | genericRestricted | sponsored or pqsn[-3] == 'www' else -3:])
+
+            except IndexError:
+              pqsn = '.'.join(pqsn[-2:])
 
           try:
             itm = chiData[chi]
