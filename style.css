@@ -5,6 +5,16 @@ body
   text-align: center;
 }
 
+circle
+{
+  opacity: .8;
+}
+
+circle:hover
+{
+  opacity: 1;
+}
+
 path.line
 {
   fill: none;
@@ -16,7 +26,6 @@ rect.all
 {
   fill: #58b;
   shape-rendering: crispEdges;
-  stroke: #fff;
 }
 
 rect.hit
@@ -29,22 +38,50 @@ svg
 {
   font: 10px sans-serif;
   margin: 1em 0;
-  width: 100%;
 }
 
 svg.bar
 {
   height: 160px;
+  width: 100%;
 }
 
 svg.line
 {
   height: 80px;
+  width: 100%;
+}
+
+svg.line .y.axis line, svg.line .y.axis path
+{
+  fill: none;
+  stroke: #000;
+}
+
+svg.line .x.axis path
+{
+  display: none;
 }
 
 text.chi
 {
   text-anchor: end;
+}
+
+#chiPqsn svg
+{
+  height: 320px;
+}
+
+#chiPqsn .x.axis text
+{
+  text-anchor: start;
+}
+
+#chiPqsn .axis line, #chiPqsn .axis path
+{
+  fill: none;
+  stroke: #000;
 }
 
 #clientCount
@@ -73,17 +110,6 @@ text.chi
 .axis
 {
   shape-rendering: crispEdges;
-}
-
-.y.axis line, .y.axis path
-{
-  fill: none;
-  stroke: #000;
-}
-
-.x.axis path
-{
-  display: none;
 }
 
 .control

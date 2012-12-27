@@ -28,6 +28,7 @@ SQUID_LOG_TCP_IMS_HIT = '9'
 
 chiData = {}
 pqsnData = {}
+chiPqsnData = {}
 
 # Connected WebSocket clients
 transport = set()
@@ -125,6 +126,8 @@ class factory(protocol.Factory):
             except IndexError:
               pqsn = '.'.join(pqsn[-2:])
 
+          # chi
+
           try:
             itm = chiData[chi]
 
@@ -142,6 +145,8 @@ class factory(protocol.Factory):
               itm[1][1] += psql
 
           chiDelta[chi] = itm
+
+          # pqsn
 
           try:
             itm = pqsnData[pqsn]
@@ -161,6 +166,36 @@ class factory(protocol.Factory):
 
           pqsnDelta[pqsn] = itm
 
+          # chiPqsn
+
+          try:
+            itm = chiPqsnData[chi]
+
+          except KeyError:
+            itm = chiPqsnData[chi] = {}
+
+          try:
+            itm = itm[pqsn]
+
+          except KeyError:
+
+            # TypeError: 'tuple' object does not support item assignment
+            itm[pqsn] = [[1, psql], [1, psql] if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT) else [0, 0]]
+
+          else:
+            itm[0][0] += 1
+            itm[0][1] += psql
+
+            if crc in (SQUID_LOG_TCP_HIT, SQUID_LOG_TCP_REFRESH_HIT, SQUID_LOG_TCP_IMS_HIT):
+              itm[1][0] += 1
+              itm[1][1] += psql
+
+          try:
+            crcData[crc] += 1
+
+          except KeyError:
+            crcData[crc] = 1
+
           ctx.entryCount -= 1
           ctx.offset += entryLen
 
@@ -177,7 +212,7 @@ class factory(protocol.Factory):
 tcp.Port(8085, factory()).startListening()
 
 class open(resource.Resource):
-  render = lambda ctx, request: json.dumps((chiData, pqsnData, clientCount))
+  render = lambda ctx, request: json.dumps((chiData, pqsnData, chiPqsnData, clientCount))
 
 # Add to and remove from connected WebSocket clients
 class factory(protocol.Factory):
